@@ -1,0 +1,93 @@
+---
+title: "Peer Assignment 1"
+author: "Xinchen Pan"
+date: "Friday, January 16, 2015"
+output: html_document
+---
+
+```{r}
+library(ggplot2)
+```
+
+## Loading and preprocessing the data  
+```{r}
+monitor <- read.csv("activity.csv")
+monitor_omit <- na.omit(monitor)
+```
+
+## What is mean total number of steps taken per day?  
+
+1. Make a histogram of the total number of steps taken each day  
+```{r}
+stepsum <- aggregate(monitor_omit$steps, by = list(monitor_omit$date),sum)
+names(stepsum) <- c("date", "steps")
+ggplot(stepsum, aes(x = stepsum[,2] )) + geom_histogram( binwidth = diff(range(stepsum[,2]))/20, colour="black" ) + xlab("number of steps") 
+```  
+
+2. Calculate and report the mean and median total number of steps taken per day
+```{r}
+mean(stepsum[,2])
+median(stepsum[,2])
+```
+
+## What is the average daily activity pattern?
+
+
+1.Make a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)  
+
+```{r}
+stepinterval <- aggregate(monitor_omit$steps, by = list(monitor_omit$interval),mean)
+ggplot(stepinterval, aes(stepinterval[,1], stepinterval[,2])) + geom_line() + 
+        xlab("interval") + ylab(" daily average steps")
+```
+
+2.Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+
+```{r}
+stepinterval[which.max(stepinterval[,2]),1]
+```
+
+## Imputing missing values  
+1.Calculate and report the total number of missing values in the dataset (i.e. the total number of rows with NAs)
+
+```{r}
+sum(is.na(monitor[,1]))
+```
+2.Devise a strategy for filling in all of the missing values in the dataset. The strategy does not need to be sophisticated. For example, you could use the mean/median for that day, or the mean for that 5-minute interval, etc.
+
+3.Create a new dataset that is equal to the original dataset but with the missing data filled in.
+```{r}
+new_data <- monitor
+for (i in 1:nrow(monitor)) 
+        {
+        if(is.na(monitor[i,1]) == T) 
+                new_data[i,1] = mean(stepinterval[,2])
+}
+
+```
+
+4.Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day. Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?  
+
+```{r}
+stepsum_fill <- aggregate(new_data$steps, by = list(new_data$date),sum)
+ggplot(stepsum_fill, aes(x = stepsum_fill[,2] )) + geom_histogram( binwidth = diff(range(stepsum[,2]))/20, colour="black" ) + xlab("number of steps") 
+mean(stepsum_fill[,2])
+median(stepsum_fill[,2])
+```
+The mean is the same as before. Median changed and is equal to mean. Imputig missing value by the average steps based on interval makes the mean and average same.
+
+## Are there differences in activity patterns between weekdays and weekends?  
+```{r}
+weekdays <- weekdays(as.Date(new_data[,2]))
+day <- ifelse(weekdays == c("Saturday","Sunday"),"weekend","weekday")
+new_data <- cbind(new_data, day)
+```
+
+
+```{r}
+
+jade <- aggregate(new_data[,1], by = list(new_data[,3],new_data[,4]),mean)
+weekplot <- ggplot(jade,aes(jade[,1],jade[,3]))+geom_line()+facet_wrap( ~ Group.2,ncol=1)
+weekplot
+```
+
